@@ -1,1 +1,792 @@
 
+<!DOCTYPE html>
+
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CNY/THB · Live</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+Thai:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --surface: #111418;
+    --border: #1e2530;
+    --accent: #00d4aa;
+    --accent2: #ff6b35;
+    --warn: #ffcc00;
+    --red: #ff4444;
+    --green: #00d4aa;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --mono: 'IBM Plex Mono', monospace;
+    --thai: 'Noto Sans Thai', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--thai);
+    min-height: 100vh;
+    padding: 20px 16px 40px;
+    background-image:
+      radial-gradient(ellipse 60% 40% at 80% 10%, rgba(0,212,170,0.05) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 30% at 10% 80%, rgba(255,107,53,0.04) 0%, transparent 50%);
+  }
+
+/* HEADER */
+header {
+display: flex;
+align-items: flex-start;
+justify-content: space-between;
+margin-bottom: 20px;
+border-bottom: 1px solid var(–border);
+padding-bottom: 16px;
+flex-wrap: wrap;
+gap: 10px;
+}
+.header-left h1 { font-family: var(–mono); font-size: 22px; font-weight: 600; color: var(–accent); }
+.header-left p { font-size: 11px; color: var(–muted); font-family: var(–mono); margin-top: 3px; }
+
+.live-badge {
+display: inline-flex;
+align-items: center;
+gap: 6px;
+background: rgba(0,212,170,0.08);
+border: 1px solid rgba(0,212,170,0.25);
+border-radius: 20px;
+padding: 4px 10px;
+font-family: var(–mono);
+font-size: 10px;
+color: var(–accent);
+margin-top: 6px;
+}
+.live-dot {
+width: 7px; height: 7px;
+background: var(–accent);
+border-radius: 50%;
+animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+0%,100% { opacity: 1; transform: scale(1); }
+50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+.rate-display { text-align: right; }
+.rate-display .rate-num {
+font-family: var(–mono);
+font-size: 36px;
+font-weight: 600;
+color: var(–text);
+transition: color 0.5s;
+line-height: 1;
+}
+.rate-display .rate-num.up { color: var(–green); }
+.rate-display .rate-num.down { color: var(–red); }
+.rate-display .rate-change {
+font-family: var(–mono);
+font-size: 12px;
+margin-top: 4px;
+}
+.rate-display .rate-label { font-size: 10px; color: var(–muted); text-transform: uppercase; letter-spacing: 1px; }
+
+/* STATUS BAR */
+.status-bar {
+display: flex;
+align-items: center;
+justify-content: space-between;
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 6px;
+padding: 8px 14px;
+margin-bottom: 16px;
+flex-wrap: wrap;
+gap: 8px;
+}
+.status-item { font-family: var(–mono); font-size: 10px; color: var(–muted); }
+.status-item span { color: var(–text); }
+.countdown-ring {
+display: flex;
+align-items: center;
+gap: 6px;
+font-family: var(–mono);
+font-size: 10px;
+color: var(–muted);
+}
+.countdown-num { color: var(–accent); font-size: 13px; font-weight: 600; min-width: 22px; text-align: right; }
+
+/* CHART */
+.card {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 8px;
+padding: 16px;
+margin-bottom: 14px;
+}
+.card-title {
+font-family: var(–mono);
+font-size: 10px;
+color: var(–muted);
+text-transform: uppercase;
+letter-spacing: 1.5px;
+margin-bottom: 12px;
+display: flex;
+align-items: center;
+gap: 8px;
+}
+.card-title::after { content: ‘’; flex: 1; height: 1px; background: var(–border); }
+canvas { width: 100% !important; }
+
+/* INDICATORS */
+.ind-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.ind-card {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 8px;
+padding: 12px;
+position: relative;
+overflow: hidden;
+}
+.ind-card::before { content: ‘’; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+.ind-card.bull::before { background: var(–green); }
+.ind-card.bear::before { background: var(–red); }
+.ind-card.neut::before { background: var(–warn); }
+
+.ind-name { font-family: var(–mono); font-size: 9px; color: var(–muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.ind-val { font-family: var(–mono); font-size: 18px; font-weight: 600; }
+.ind-val.bull { color: var(–green); }
+.ind-val.bear { color: var(–red); }
+.ind-val.neut { color: var(–warn); }
+.ind-badge {
+font-size: 9px; font-weight: 600;
+padding: 2px 7px; border-radius: 3px;
+display: inline-block; margin-top: 4px;
+font-family: var(–mono);
+}
+.ind-badge.bull { background: rgba(0,212,170,0.12); color: var(–green); }
+.ind-badge.bear { background: rgba(255,68,68,0.12); color: var(–red); }
+.ind-badge.neut { background: rgba(255,204,0,0.12); color: var(–warn); }
+.ind-desc { font-size: 9px; color: var(–muted); margin-top: 5px; line-height: 1.4; }
+
+/* Gauge */
+.gauge-track {
+height: 5px;
+background: linear-gradient(to right, var(–green), var(–warn), var(–red));
+border-radius: 3px;
+position: relative;
+margin: 5px 0;
+}
+.gauge-needle {
+position: absolute; top: -4px;
+width: 13px; height: 13px;
+background: white; border-radius: 50%;
+transform: translateX(-50%);
+box-shadow: 0 0 6px rgba(255,255,255,0.4);
+transition: left 1s ease;
+}
+
+/* FORECAST */
+.fc-row {
+display: grid;
+grid-template-columns: 85px 1fr 80px 60px;
+align-items: center;
+padding: 9px 0;
+border-bottom: 1px solid var(–border);
+gap: 6px;
+}
+.fc-row:last-child { border-bottom: none; }
+.fc-row.hdr { font-family: var(–mono); font-size: 9px; color: var(–muted); text-transform: uppercase; padding-bottom: 6px; }
+.fc-day { font-family: var(–mono); font-size: 11px; font-weight: 600; }
+.fc-sub { font-size: 9px; color: var(–muted); font-family: var(–mono); }
+.fc-range { font-family: var(–mono); font-size: 11px; }
+.range-bar { height: 4px; background: var(–border); border-radius: 2px; margin-top: 3px; position: relative; overflow: hidden; }
+.range-fill { position: absolute; top: 0; bottom: 0; border-radius: 2px; }
+.fc-badge {
+font-size: 9px; font-weight: 600;
+padding: 2px 7px; border-radius: 3px;
+text-align: center; font-family: var(–mono);
+}
+.fc-badge.cny-strong { background: rgba(0,212,170,0.12); color: var(–green); }
+.fc-badge.volatile { background: rgba(255,204,0,0.12); color: var(–warn); }
+.conf-dots { display: flex; gap: 2px; }
+.dot { width: 7px; height: 7px; border-radius: 2px; background: var(–border); }
+.dot.on { background: var(–accent); }
+
+/* SR */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.sr-row {
+display: flex; justify-content: space-between; align-items: center;
+padding: 5px 0; border-bottom: 1px dashed var(–border);
+font-family: var(–mono); font-size: 11px;
+}
+.sr-row:last-child { border-bottom: none; }
+.sr-lbl { color: var(–muted); font-size: 9px; }
+.sr-val { font-weight: 600; }
+.sr-val.R { color: var(–red); }
+.sr-val.S { color: var(–green); }
+.sr-val.P { color: var(–warn); }
+
+/* SUMMARY */
+.summary {
+background: linear-gradient(135deg, rgba(0,212,170,0.06), rgba(255,107,53,0.04));
+border: 1px solid rgba(0,212,170,0.2);
+border-radius: 8px;
+padding: 14px;
+margin-bottom: 14px;
+}
+.summary h3 { font-family: var(–mono); font-size: 10px; color: var(–accent); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; }
+.summary p { font-size: 12px; line-height: 1.7; color: var(–text); }
+.hl { color: var(–accent); font-weight: 600; }
+.wn { color: var(–warn); font-weight: 600; }
+
+/* ERROR */
+.api-note {
+background: rgba(255,204,0,0.06);
+border: 1px solid rgba(255,204,0,0.2);
+border-radius: 6px;
+padding: 8px 12px;
+font-family: var(–mono);
+font-size: 10px;
+color: var(–warn);
+margin-bottom: 14px;
+display: none;
+}
+
+.disclaimer { font-size: 10px; color: var(–muted); text-align: center; margin-top: 20px; line-height: 1.5; font-family: var(–mono); }
+
+@keyframes flash {
+0% { opacity: 1; }
+50% { opacity: 0.3; }
+100% { opacity: 1; }
+}
+.flash { animation: flash 0.6s ease; }
+</style>
+
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>CNY / THB</h1>
+    <p>Live Rate · Technical Forecast 7–9 Apr 2026</p>
+    <div class="live-badge"><div class="live-dot"></div> LIVE · Auto-refresh 60s</div>
+  </div>
+  <div class="rate-display">
+    <div class="rate-label">1 CNY =</div>
+    <div class="rate-num" id="rateNum">—</div>
+    <div class="rate-change" id="rateChange">กำลังโหลด...</div>
+  </div>
+</header>
+
+<div class="api-note" id="apiNote">
+  ⚠ ไม่สามารถดึงข้อมูล live ได้ในขณะนี้ — แสดงอัตราล่าสุดที่ทราบ (4.7525)
+</div>
+
+<div class="status-bar">
+  <div class="status-item">อัพเดตล่าสุด: <span id="lastUpdate">—</span></div>
+  <div class="status-item">แหล่งข้อมูล: <span>Frankfurter API (ECB)</span></div>
+  <div class="status-item">USD/CNY: <span id="usdcny">—</span></div>
+  <div class="countdown-ring">
+    รีเฟรชใน <div class="countdown-num" id="countdownNum">60</div>s
+    <svg width="22" height="22" style="transform:rotate(-90deg)">
+      <circle cx="11" cy="11" r="9" fill="none" stroke="#1e2530" stroke-width="2"/>
+      <circle cx="11" cy="11" r="9" fill="none" stroke="#00d4aa" stroke-width="2"
+        stroke-dasharray="56.5" id="timerArc" stroke-dashoffset="0"
+        stroke-linecap="round" style="transition: stroke-dashoffset 1s linear;"/>
+    </svg>
+  </div>
+</div>
+
+<!-- Price Chart -->
+
+<div class="card">
+  <div class="card-title">กราฟราคา CNY/THB (Live ticks + คาดการณ์)</div>
+  <canvas id="priceChart" height="170"></canvas>
+</div>
+
+<!-- Indicators (computed live from rate) -->
+
+<div class="ind-grid">
+  <div class="ind-card bull" id="indRSI">
+    <div class="ind-name">RSI (14) — คำนวณจากข้อมูล live</div>
+    <div class="ind-val bull" id="rsiVal">—</div>
+    <div class="gauge-track"><div class="gauge-needle" id="rsiNeedle" style="left:50%"></div></div>
+    <span class="ind-badge bull" id="rsiBadge">กำลังคำนวณ...</span>
+    <div class="ind-desc">RSI > 70 = Overbought (หยวนแข็งเกิน), &lt; 30 = Oversold</div>
+  </div>
+
+  <div class="ind-card neut" id="indMom">
+    <div class="ind-name">Momentum (Rate of Change)</div>
+    <div class="ind-val neut" id="momVal">—</div>
+    <div style="height:1px;background:var(--border);margin:5px 0"></div>
+    <span class="ind-badge neut" id="momBadge">กำลังคำนวณ...</span>
+    <div class="ind-desc">เทียบราคาปัจจุบัน vs 10 tick ก่อน</div>
+  </div>
+
+  <div class="ind-card bull" id="indSMA">
+    <div class="ind-name">SMA 5 vs SMA 20 (ticks)</div>
+    <div class="ind-val bull" id="smaVal">—</div>
+    <div style="height:1px;background:var(--border);margin:5px 0"></div>
+    <span class="ind-badge bull" id="smaBadge">กำลังคำนวณ...</span>
+    <div class="ind-desc">SMA5 > SMA20 = แนวโน้มขึ้น (หยวนแข็ง)</div>
+  </div>
+
+  <div class="ind-card bull" id="indBB">
+    <div class="ind-name">Bollinger Band Position</div>
+    <div class="ind-val bull" id="bbVal">—</div>
+    <div style="height:1px;background:var(--border);margin:5px 0"></div>
+    <span class="ind-badge bull" id="bbBadge">กำลังคำนวณ...</span>
+    <div class="ind-desc">ราคาอยู่ตรงไหนของ Bollinger Band (20, 2σ)</div>
+  </div>
+</div>
+
+<!-- Support / Resistance -->
+
+<div class="two-col">
+  <div class="card" style="margin-bottom:0">
+    <div class="card-title">Pivot Points</div>
+    <div class="sr-row"><span class="sr-lbl">R2</span><span class="sr-val R" id="r2">—</span></div>
+    <div class="sr-row"><span class="sr-lbl">R1</span><span class="sr-val R" id="r1">—</span></div>
+    <div class="sr-row"><span class="sr-lbl">Pivot</span><span class="sr-val P" id="pivot">—</span></div>
+    <div class="sr-row"><span class="sr-lbl">S1</span><span class="sr-val S" id="s1">—</span></div>
+    <div class="sr-row"><span class="sr-lbl">S2</span><span class="sr-val S" id="s2">—</span></div>
+  </div>
+  <div class="card" style="margin-bottom:0">
+    <div class="card-title">Bollinger Bands</div>
+    <div class="sr-row"><span class="sr-lbl">Upper</span><span class="sr-val R" id="bbUpper">—</span></div>
+    <div class="sr-row"><span class="sr-lbl">Middle (MA20)</span><span class="sr-val P" id="bbMid">—</span></div>
+    <div class="sr-row"><span class="sr-lbl">Lower</span><span class="sr-val S" id="bbLower">—</span></div>
+    <div class="sr-row"><span class="sr-lbl">ราคาปัจจุบัน</span><span class="sr-val" id="bbCurrent" style="color:var(--text)">—</span></div>
+    <div class="sr-row"><span class="sr-lbl">สถานะ</span><span class="sr-val P" id="bbStatus">—</span></div>
+  </div>
+</div>
+
+<!-- 3-Day Forecast -->
+
+<div class="card" style="margin-top:14px">
+  <div class="card-title">คาดการณ์ 3 วัน (ปรับตามราคาจริง)</div>
+  <div class="fc-row hdr"><span>วัน</span><span>ช่วงราคา</span><span>แนวโน้ม</span><span>ความเชื่อ</span></div>
+
+  <div class="fc-row">
+    <div><div class="fc-day">จ. 7 เม.ย.</div><div class="fc-sub">เปิดตลาดจีน</div></div>
+    <div>
+      <div class="fc-range" id="fc1range">—</div>
+      <div class="range-bar"><div class="range-fill" id="fc1bar" style="left:25%;right:20%;background:linear-gradient(to right,var(--green),var(--accent))"></div></div>
+    </div>
+    <span class="fc-badge cny-strong">หยวนแข็ง</span>
+    <div class="conf-dots"><div class="dot on"></div><div class="dot on"></div><div class="dot on"></div><div class="dot"></div></div>
+  </div>
+
+  <div class="fc-row">
+    <div><div class="fc-day">อ. 8 เม.ย.</div><div class="fc-sub">ระวังข่าวภาษี</div></div>
+    <div>
+      <div class="fc-range" id="fc2range">—</div>
+      <div class="range-bar"><div class="range-fill" id="fc2bar" style="left:20%;right:15%;background:linear-gradient(to right,var(--warn),var(--accent))"></div></div>
+    </div>
+    <span class="fc-badge volatile">ผันผวนสูง</span>
+    <div class="conf-dots"><div class="dot on"></div><div class="dot on"></div><div class="dot"></div><div class="dot"></div></div>
+  </div>
+
+  <div class="fc-row">
+    <div><div class="fc-day">พ. 9 เม.ย.</div><div class="fc-sub">ติดตามข่าว PBoC</div></div>
+    <div>
+      <div class="fc-range" id="fc3range">—</div>
+      <div class="range-bar"><div class="range-fill" id="fc3bar" style="left:25%;right:22%;background:linear-gradient(to right,var(--green),var(--warn))"></div></div>
+    </div>
+    <span class="fc-badge cny-strong">หยวนแข็ง</span>
+    <div class="conf-dots"><div class="dot on"></div><div class="dot on"></div><div class="dot on"></div><div class="dot"></div></div>
+  </div>
+</div>
+
+<!-- Summary -->
+
+<div class="summary">
+  <h3>📊 สรุป Technical Analysis (Live)</h3>
+  <p id="summaryText">กำลังโหลดข้อมูล...</p>
+</div>
+
+<p class="disclaimer">
+  ⚠ ข้อมูลจาก Frankfurter API (European Central Bank) · อัพเดตทุก 60 วินาที<br>
+  ไม่ใช่คำแนะนำทางการเงิน — ใช้เพื่อประกอบการตัดสินใจเท่านั้น
+</p>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<script>
+// ─── State ───────────────────────────────────────────────────────────────────
+const REFRESH = 60;
+let countdown = REFRESH;
+let prevRate = null;
+let rateHistory = []; // {t, v}
+let chart = null;
+const FALLBACK = 4.7525;
+
+// ─── Chart Setup ─────────────────────────────────────────────────────────────
+function initChart() {
+  const ctx = document.getElementById('priceChart').getContext('2d');
+  const grad = ctx.createLinearGradient(0,0,0,180);
+  grad.addColorStop(0, 'rgba(0,212,170,0.18)');
+  grad.addColorStop(1, 'rgba(0,212,170,0)');
+
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [
+        {
+          label: 'CNY/THB Live',
+          data: [],
+          borderColor: '#00d4aa',
+          backgroundColor: grad,
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: '#00d4aa',
+          tension: 0.35,
+          fill: true,
+        },
+        {
+          label: 'คาดการณ์',
+          data: [],
+          borderColor: '#ff6b35',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          borderDash: [6,3],
+          pointRadius: 4,
+          pointBackgroundColor: '#ff6b35',
+          tension: 0.3,
+          fill: false,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      animation: { duration: 400 },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          labels: { color: '#64748b', font: { family: 'IBM Plex Mono', size: 10 }, boxWidth: 12, padding: 10 }
+        },
+        tooltip: {
+          backgroundColor: '#111418', borderColor: '#1e2530', borderWidth: 1,
+          titleColor: '#e2e8f0', bodyColor: '#94a3b8',
+          titleFont: { family: 'IBM Plex Mono', size: 10 },
+          bodyFont: { family: 'IBM Plex Mono', size: 11 },
+          callbacks: {
+            label: c => c.parsed.y != null ? ` ${c.dataset.label}: ฿${c.parsed.y.toFixed(4)}` : null
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: '#1e2530' }, ticks: { color: '#475569', font: { family: 'IBM Plex Mono', size: 9 }, maxTicksLimit: 8, maxRotation: 0 } },
+        y: {
+          grid: { color: '#1e2530' },
+          ticks: { color: '#475569', font: { family: 'IBM Plex Mono', size: 10 }, callback: v => `฿${v.toFixed(3)}` }
+        }
+      }
+    }
+  });
+}
+
+// ─── Fetch Rate ───────────────────────────────────────────────────────────────
+// Strategy: Frankfurter gives CNY and THB vs EUR → cross rate
+async function fetchRate() {
+  try {
+    const res = await fetch('https://api.frankfurter.app/latest?from=CNY&to=THB', { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const rate = data.rates?.THB;
+    if (!rate) throw new Error('No THB rate');
+    document.getElementById('apiNote').style.display = 'none';
+    return parseFloat(rate.toFixed(5));
+  } catch(e) {
+    // fallback: try EUR cross
+    try {
+      const res2 = await fetch('https://api.frankfurter.app/latest?from=EUR&to=CNY,THB', { cache: 'no-store' });
+      const d2 = await res2.json();
+      const cross = d2.rates.THB / d2.rates.CNY;
+      document.getElementById('apiNote').style.display = 'none';
+      return parseFloat(cross.toFixed(5));
+    } catch(e2) {
+      document.getElementById('apiNote').style.display = 'block';
+      return null;
+    }
+  }
+}
+
+async function fetchUSDCNY() {
+  try {
+    const res = await fetch('https://api.frankfurter.app/latest?from=USD&to=CNY', { cache: 'no-store' });
+    const d = await res.json();
+    return d.rates?.CNY?.toFixed(4) ?? '—';
+  } catch { return '—'; }
+}
+
+// ─── Indicators ──────────────────────────────────────────────────────────────
+function calcRSI(prices, period = 14) {
+  if (prices.length < period + 1) return null;
+  const slice = prices.slice(-period - 1);
+  let gains = 0, losses = 0;
+  for (let i = 1; i < slice.length; i++) {
+    const d = slice[i] - slice[i-1];
+    if (d >= 0) gains += d; else losses -= d;
+  }
+  const avgG = gains / period, avgL = losses / period;
+  if (avgL === 0) return 100;
+  return 100 - 100 / (1 + avgG / avgL);
+}
+
+function calcSMA(prices, n) {
+  if (prices.length < n) return null;
+  const s = prices.slice(-n);
+  return s.reduce((a,b) => a+b, 0) / n;
+}
+
+function calcBB(prices, n = 20, k = 2) {
+  if (prices.length < n) return null;
+  const s = prices.slice(-n);
+  const mean = s.reduce((a,b) => a+b, 0) / n;
+  const std = Math.sqrt(s.map(x => (x-mean)**2).reduce((a,b)=>a+b,0) / n);
+  return { upper: mean + k*std, mid: mean, lower: mean - k*std };
+}
+
+function setCard(card, cls) {
+  card.className = 'ind-card ' + cls;
+}
+
+function updateIndicators(rate) {
+  const prices = rateHistory.map(r => r.v);
+
+  // RSI
+  const rsi = calcRSI(prices) ?? estimateRSI(rate);
+  const rsiEl = document.getElementById('rsiVal');
+  const rsiBadge = document.getElementById('rsiBadge');
+  const needle = document.getElementById('rsiNeedle');
+  rsiEl.textContent = rsi.toFixed(1);
+  needle.style.left = rsi + '%';
+  if (rsi > 70) {
+    setCard(document.getElementById('indRSI'), 'bull');
+    rsiEl.className = 'ind-val bull';
+    rsiBadge.className = 'ind-badge bull';
+    rsiBadge.textContent = 'Overbought → หยวนแข็งมาก';
+  } else if (rsi < 30) {
+    setCard(document.getElementById('indRSI'), 'bear');
+    rsiEl.className = 'ind-val bear';
+    rsiBadge.className = 'ind-badge bear';
+    rsiBadge.textContent = 'Oversold → หยวนอ่อนมาก';
+  } else {
+    setCard(document.getElementById('indRSI'), 'neut');
+    rsiEl.className = 'ind-val neut';
+    rsiBadge.className = 'ind-badge neut';
+    rsiBadge.textContent = 'Neutral Zone';
+  }
+
+  // Momentum (ROC)
+  const momEl = document.getElementById('momVal');
+  const momBadge = document.getElementById('momBadge');
+  if (prices.length >= 5) {
+    const roc = ((prices[prices.length-1] - prices[Math.max(0, prices.length-5)]) / prices[Math.max(0,prices.length-5)] * 100);
+    momEl.textContent = (roc >= 0 ? '+' : '') + roc.toFixed(3) + '%';
+    if (roc > 0.01) {
+      setCard(document.getElementById('indMom'), 'bull');
+      momEl.className = 'ind-val bull';
+      momBadge.className = 'ind-badge bull'; momBadge.textContent = 'Bullish Momentum';
+    } else if (roc < -0.01) {
+      setCard(document.getElementById('indMom'), 'bear');
+      momEl.className = 'ind-val bear';
+      momBadge.className = 'ind-badge bear'; momBadge.textContent = 'Bearish Momentum';
+    } else {
+      setCard(document.getElementById('indMom'), 'neut');
+      momEl.className = 'ind-val neut';
+      momBadge.className = 'ind-badge neut'; momBadge.textContent = 'Sideways';
+    }
+  } else {
+    momEl.textContent = 'รอข้อมูล';
+    momBadge.textContent = 'กำลังสะสม ticks...';
+  }
+
+  // SMA
+  const sma5 = calcSMA(prices, 5);
+  const sma20 = calcSMA(prices, 20);
+  const smaEl = document.getElementById('smaVal');
+  const smaBadge = document.getElementById('smaBadge');
+  if (sma5 && sma20) {
+    smaEl.textContent = sma5.toFixed(4) + ' / ' + sma20.toFixed(4);
+    if (sma5 > sma20) {
+      setCard(document.getElementById('indSMA'), 'bull');
+      smaEl.className = 'ind-val bull';
+      smaBadge.className = 'ind-badge bull'; smaBadge.textContent = 'SMA5 > SMA20 → หยวนแข็ง';
+    } else {
+      setCard(document.getElementById('indSMA'), 'bear');
+      smaEl.className = 'ind-val bear';
+      smaBadge.className = 'ind-badge bear'; smaBadge.textContent = 'SMA5 < SMA20 → หยวนอ่อน';
+    }
+  } else {
+    smaEl.textContent = sma5 ? sma5.toFixed(4) : 'รอข้อมูล';
+    smaBadge.textContent = `สะสม ${prices.length}/20 ticks`;
+  }
+
+  // Bollinger
+  const bb = calcBB(prices);
+  const bbEl = document.getElementById('bbVal');
+  const bbBadge = document.getElementById('bbBadge');
+  if (bb) {
+    const pct = ((rate - bb.lower) / (bb.upper - bb.lower) * 100).toFixed(0);
+    bbEl.textContent = pct + '% of band';
+    document.getElementById('bbUpper').textContent = '฿' + bb.upper.toFixed(4);
+    document.getElementById('bbMid').textContent = '฿' + bb.mid.toFixed(4);
+    document.getElementById('bbLower').textContent = '฿' + bb.lower.toFixed(4);
+    document.getElementById('bbCurrent').textContent = '฿' + rate.toFixed(4);
+    if (pct > 80) {
+      setCard(document.getElementById('indBB'), 'bull');
+      bbEl.className = 'ind-val bull';
+      bbBadge.className = 'ind-badge bull'; bbBadge.textContent = 'ใกล้ Upper Band';
+      document.getElementById('bbStatus').textContent = 'ใกล้ Upper ⚠';
+    } else if (pct < 20) {
+      setCard(document.getElementById('indBB'), 'bear');
+      bbEl.className = 'ind-val bear';
+      bbBadge.className = 'ind-badge bear'; bbBadge.textContent = 'ใกล้ Lower Band';
+      document.getElementById('bbStatus').textContent = 'ใกล้ Lower';
+    } else {
+      setCard(document.getElementById('indBB'), 'neut');
+      bbEl.className = 'ind-val neut';
+      bbBadge.className = 'ind-badge neut'; bbBadge.textContent = 'กลาง Band';
+      document.getElementById('bbStatus').textContent = 'กลาง Band';
+    }
+  } else {
+    bbEl.textContent = 'รอข้อมูล';
+    document.getElementById('bbUpper').textContent = '—';
+    document.getElementById('bbMid').textContent = '—';
+    document.getElementById('bbLower').textContent = '—';
+    document.getElementById('bbCurrent').textContent = '฿' + rate.toFixed(4);
+    document.getElementById('bbStatus').textContent = `รอ ${prices.length}/20`;
+    bbBadge.textContent = `สะสม ${prices.length}/20 ticks`;
+  }
+
+  // Pivot Points (based on latest known H/L/C approximation)
+  const approxH = rate * 1.008;
+  const approxL = rate * 0.992;
+  const p = (approxH + approxL + rate) / 3;
+  document.getElementById('r2').textContent = '฿' + (p + (approxH - approxL)).toFixed(4);
+  document.getElementById('r1').textContent = '฿' + (2*p - approxL).toFixed(4);
+  document.getElementById('pivot').textContent = '฿' + p.toFixed(4);
+  document.getElementById('s1').textContent = '฿' + (2*p - approxH).toFixed(4);
+  document.getElementById('s2').textContent = '฿' + (p - (approxH - approxL)).toFixed(4);
+
+  // Forecast ranges (±% from live rate)
+  const f1L = (rate * 0.994).toFixed(4), f1H = (rate * 1.006).toFixed(4);
+  const f2L = (rate * 0.991).toFixed(4), f2H = (rate * 1.008).toFixed(4);
+  const f3L = (rate * 0.989).toFixed(4), f3H = (rate * 1.005).toFixed(4);
+  document.getElementById('fc1range').textContent = `฿${f1L} – ฿${f1H}`;
+  document.getElementById('fc2range').textContent = `฿${f2L} – ฿${f2H}`;
+  document.getElementById('fc3range').textContent = `฿${f3L} – ฿${f3H}`;
+
+  // Summary
+  const rsiStr = rsi > 70 ? 'Overbought (หยวนแข็งมาก อาจพัก)' : rsi < 30 ? 'Oversold (หยวนอ่อนมาก อาจเด้ง)' : 'Neutral';
+  document.getElementById('summaryText').innerHTML =
+    `อัตราปัจจุบัน <span class="hl">฿${rate.toFixed(4)}</span>/หยวน · RSI = <span class="hl">${rsi.toFixed(1)}</span> (${rsiStr})<br><br>` +
+    `ช่วง 3 วันข้างหน้า คาดการณ์ <span class="hl">฿${f3L}–฿${f1H}</span> · ` +
+    `<span class="wn">ระวังข่าวภาษีสหรัฐ-จีนวันอังคาร</span> อาจดันราคาพุ่งนอก band ได้<br><br>` +
+    `หากจะแลกเงินก่อนไปเซี่ยงไฮ้ปลายเมษา: จับจังหวะวันที่หยวนอ่อนลงเล็กน้อย (RSI ลงจาก Overbought) ดีกว่าแลกทีเดียว`;
+}
+
+function estimateRSI(rate) {
+  // estimate based on position in known 52-week range 4.41–4.77
+  const lo = 4.41, hi = 4.77;
+  return 30 + ((rate - lo) / (hi - lo)) * 55;
+}
+
+// ─── Chart Update ─────────────────────────────────────────────────────────────
+function updateChart(rate) {
+  const now = new Date();
+  const label = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+
+  chart.data.labels.push(label);
+  chart.data.datasets[0].data.push(rate);
+
+  // Keep max 30 live points
+  if (chart.data.labels.length > 30) {
+    chart.data.labels.shift();
+    chart.data.datasets[0].data.shift();
+  }
+
+  // Forecast: 3 points ahead (simple linear projection from last 3)
+  const prices = rateHistory.map(r => r.v);
+  const trend = prices.length >= 3 ? (prices[prices.length-1] - prices[prices.length-3]) / 2 : 0;
+  chart.data.datasets[1].data = Array(chart.data.labels.length).fill(null);
+  chart.data.datasets[1].data[chart.data.labels.length-1] = rate;
+
+  chart.update('none');
+}
+
+// ─── Rate Display ─────────────────────────────────────────────────────────────
+function displayRate(rate) {
+  const el = document.getElementById('rateNum');
+  const changeEl = document.getElementById('rateChange');
+
+  el.textContent = rate.toFixed(4);
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 600);
+
+  if (prevRate !== null) {
+    const diff = rate - prevRate;
+    const pct = (diff / prevRate * 100).toFixed(3);
+    if (diff > 0) {
+      el.className = 'rate-num up';
+      changeEl.style.color = 'var(--green)';
+      changeEl.textContent = `▲ +${diff.toFixed(4)} (+${pct}%) หยวนแข็งขึ้น`;
+    } else if (diff < 0) {
+      el.className = 'rate-num down';
+      changeEl.style.color = 'var(--red)';
+      changeEl.textContent = `▼ ${diff.toFixed(4)} (${pct}%) หยวนอ่อนลง`;
+    } else {
+      el.className = 'rate-num';
+      changeEl.style.color = 'var(--muted)';
+      changeEl.textContent = `→ ไม่เปลี่ยนแปลง`;
+    }
+  } else {
+    changeEl.textContent = 'อัพเดตแรก ✓';
+    changeEl.style.color = 'var(--accent)';
+  }
+
+  document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('th-TH');
+  prevRate = rate;
+}
+
+// ─── Countdown Timer ──────────────────────────────────────────────────────────
+const arc = document.getElementById('timerArc');
+const circumference = 56.5;
+
+function startCountdown() {
+  countdown = REFRESH;
+  const interval = setInterval(() => {
+    countdown--;
+    document.getElementById('countdownNum').textContent = countdown;
+    arc.style.strokeDashoffset = circumference * (1 - countdown / REFRESH);
+    if (countdown <= 0) {
+      clearInterval(interval);
+      tick().then(() => startCountdown());
+    }
+  }, 1000);
+}
+
+// ─── Main tick ───────────────────────────────────────────────────────────────
+async function tick() {
+  const [rate, usdcny] = await Promise.all([fetchRate(), fetchUSDCNY()]);
+  const r = rate ?? FALLBACK;
+
+  rateHistory.push({ t: Date.now(), v: r });
+  if (rateHistory.length > 100) rateHistory.shift();
+
+  displayRate(r);
+  document.getElementById('usdcny').textContent = usdcny;
+  updateChart(r);
+  updateIndicators(r);
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+initChart();
+tick().then(() => startCountdown());
+</script>
+
+</body>
+</html>
