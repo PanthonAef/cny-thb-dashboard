@@ -17,7 +17,6 @@
     --user-bubble:linear-gradient(135deg,#7C3AED,#6366F1); --user-ink:#ffffff;
     --ai-bubble:#ffffff; --ai-ink:#1E1B4B;
     --shadow:0 1px 2px rgba(30,27,75,.05),0 8px 30px rgba(99,102,241,.08);
-    --radius:20px;
   }
   @media (prefers-color-scheme: dark){
     :root{
@@ -56,7 +55,7 @@
     display:grid;place-items:center;cursor:pointer;font-size:17px;color:var(--ink);flex:0 0 auto}
   .iconbtn:active{transform:translateY(1px)}
 
-  /* ---- chat thread ---- */
+  /* ---- chat thread (read-only display) ---- */
   .thread{flex:1;overflow-y:auto;padding:18px 14px 8px;display:flex;flex-direction:column;gap:16px;scroll-behavior:smooth}
   .day{align-self:center;font-size:11px;color:var(--muted);background:var(--panel);border:1px solid var(--line);
     padding:3px 12px;border-radius:999px}
@@ -71,11 +70,6 @@
   .bubble .amt{font-weight:700}
   .msg .time{font-size:10.5px;color:var(--muted);margin-top:5px;opacity:.9}
   .msg.user .time{text-align:right}
-  .del{position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;border:none;
-    background:var(--danger);color:#fff;font-size:12px;line-height:1;cursor:pointer;display:none;
-    box-shadow:0 2px 8px rgba(0,0,0,.25)}
-  .msg.user:hover .del,.msg.user:focus-within .del{display:block}
-  /* context card = balance summary from assistant */
   .ctx{background:var(--ai-bubble);border:1px solid var(--line);border-left:3px solid var(--accent);
     border-radius:14px;padding:12px 14px;box-shadow:var(--shadow);max-width:86%;align-self:flex-start}
   .ctx .who{font-size:12px;color:var(--muted)}
@@ -84,31 +78,51 @@
   .ctx .row{display:flex;gap:16px;margin-top:8px;font-size:12px;color:var(--muted)}
   .ctx .row b{color:var(--ink);font-family:"Space Grotesk",sans-serif}
   .ctx svg{width:100%;height:54px;margin-top:8px;display:block}
-  /* typing indicator */
-  .typing{display:flex;gap:5px;padding:14px 16px}
-  .typing i{width:8px;height:8px;border-radius:50%;background:var(--muted);animation:blink 1.2s infinite both}
-  .typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
-  @keyframes blink{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
 
-  /* ---- composer ---- */
-  .composer{padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--panel);border-top:1px solid var(--line)}
-  .cbox{display:flex;align-items:flex-end;gap:8px;background:var(--thread);border:1px solid var(--line);
-    border-radius:24px;padding:6px 6px 6px 14px}
-  .cbox:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,58,237,.15)}
-  .cbox textarea{flex:1;border:none;background:transparent;resize:none;outline:none;color:var(--ink);
-    font:inherit;max-height:120px;padding:8px 0;line-height:1.35}
-  .send{width:40px;height:40px;border-radius:50%;border:none;background:var(--user-bubble);color:#fff;
-    font-size:18px;cursor:pointer;flex:0 0 auto;display:grid;place-items:center;transition:.12s}
-  .send:disabled{opacity:.4;cursor:default}
-  .send:not(:disabled):active{transform:scale(.94)}
-  .hint{font-size:11px;color:var(--muted);text-align:center;margin:7px 4px 0}
-  .quick{display:flex;gap:7px;overflow-x:auto;padding:8px 2px 2px;-webkit-overflow-scrolling:touch}
-  .chip{white-space:nowrap;font-size:12.5px;padding:6px 11px;border-radius:999px;border:1px solid var(--line);
-    background:var(--thread);color:var(--ink);cursor:pointer}
+  /* ---- empty state ---- */
+  .empty{margin:auto;text-align:center;max-width:340px;padding:20px}
+  .empty .ic{width:66px;height:66px;border-radius:20px;background:var(--user-bubble);color:#fff;
+    display:grid;place-items:center;font-size:30px;margin:0 auto 14px;box-shadow:0 10px 30px rgba(124,58,237,.35)}
+  .empty h3{margin:0 0 6px;font-size:18px}
+  .empty p{margin:0 0 16px;color:var(--muted);font-size:14px}
 
-  /* ---- settings slide-over ---- */
-  .scrim{position:absolute;inset:0;background:rgba(15,10,40,.45);opacity:0;pointer-events:none;transition:.2s;z-index:20}
+  /* ---- bottom import bar (replaces the composer) ---- */
+  .importbar{padding:12px 14px calc(12px + env(safe-area-inset-bottom));background:var(--panel);border-top:1px solid var(--line);
+    display:flex;gap:10px;align-items:center}
+  .importbar .lead{flex:1;font-size:12.5px;color:var(--muted);line-height:1.35}
+  .btn-line{border:none;border-radius:24px;padding:12px 18px;font-weight:700;font-size:14px;cursor:pointer;
+    background:var(--user-bubble);color:#fff;flex:0 0 auto;display:inline-flex;align-items:center;gap:8px;
+    box-shadow:0 6px 18px rgba(124,58,237,.3)}
+  .btn-line:active{transform:translateY(1px)}
+
+  /* ---- import sheet ---- */
+  .scrim{position:absolute;inset:0;background:rgba(15,10,40,.5);opacity:0;pointer-events:none;transition:.2s;z-index:20}
   .scrim.open{opacity:1;pointer-events:auto}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--panel);border-top-left-radius:22px;border-top-right-radius:22px;
+    border:1px solid var(--line);transform:translateY(100%);transition:.26s cubic-bezier(.2,.7,.2,1);z-index:21;
+    padding:16px 16px calc(16px + env(safe-area-inset-bottom));max-height:88%;overflow-y:auto}
+  .sheet.open{transform:none}
+  .grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:2px auto 12px}
+  .sheet h2{font-size:17px;margin:0 0 4px}
+  .sheet p.s{font-size:12.5px;color:var(--muted);margin:0 0 12px}
+  .drop{border:1.5px dashed var(--line);border-radius:14px;padding:14px;text-align:center;color:var(--muted);
+    font-size:13px;background:var(--thread);cursor:pointer}
+  .drop b{color:var(--accent)}
+  textarea.paste{width:100%;margin-top:10px;background:var(--thread);border:1px solid var(--line);border-radius:12px;
+    padding:11px;color:var(--ink);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;min-height:120px;resize:vertical}
+  .prev{font-size:12.5px;color:var(--muted);margin:8px 2px}
+  .row2{display:flex;gap:10px;margin-top:8px}
+  .btn{flex:1;border:1px solid var(--line);background:var(--thread);color:var(--ink);border-radius:12px;padding:12px;
+    font-weight:700;cursor:pointer}
+  .btn.primary{background:var(--accent);color:var(--on-accent);border-color:transparent}
+  .btn:disabled{opacity:.45;cursor:default}
+  details.help{margin-top:14px}
+  details.help>summary{cursor:pointer;font-weight:600;font-size:13px;color:var(--accent);list-style:none}
+  details.help>summary::-webkit-details-marker{display:none}
+  .help .steps{font-size:12.5px;color:var(--muted);background:var(--thread);border-radius:12px;padding:12px;margin-top:8px}
+  .help ol{margin:6px 0 0;padding-left:18px}.help li{margin:5px 0}
+
+  /* ---- settings panel ---- */
   .panel{position:absolute;top:0;right:0;height:100%;width:min(360px,88%);background:var(--panel);
     border-left:1px solid var(--line);transform:translateX(100%);transition:.24s cubic-bezier(.2,.7,.2,1);
     z-index:21;overflow-y:auto;padding:16px}
@@ -116,20 +130,14 @@
   .panel h2{font-size:16px;margin:2px 0 14px;display:flex;justify-content:space-between;align-items:center}
   .grp{margin-bottom:18px}
   .grp .lab{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin-bottom:7px;display:block}
-  input,textarea,select,button{font-family:inherit}
   .fld{background:var(--thread);border:1px solid var(--line);border-radius:10px;padding:9px 11px;width:100%;color:var(--ink);font-size:14px}
   .two{display:flex;gap:8px}.two>div{flex:1}
-  .btn{border:1px solid var(--line);background:var(--thread);color:var(--ink);border-radius:10px;padding:9px 12px;
-    font-weight:600;cursor:pointer;width:100%}
-  .btn.primary{background:var(--accent);color:var(--on-accent);border-color:transparent}
-  .btn.dang{color:var(--danger);border-color:transparent;background:transparent}
   .dot{width:9px;height:9px;border-radius:50%;background:var(--muted);display:inline-block;margin-right:6px}
   .dot.on{background:var(--ok)} .dot.err{background:var(--danger)} .dot.wait{background:var(--warn)}
-  .steps{font-size:12px;color:var(--muted);background:var(--thread);border-radius:10px;padding:11px;margin-top:8px}
-  .steps ol{margin:6px 0 0;padding-left:16px}.steps li{margin:4px 0}.steps a{color:var(--accent)}
+  .steps2{font-size:12px;color:var(--muted);background:var(--thread);border-radius:10px;padding:11px;margin-top:8px}
+  .steps2 ol{margin:6px 0 0;padding-left:16px}.steps2 li{margin:4px 0}.steps2 a{color:var(--accent)}
   code{background:var(--thread);padding:1px 5px;border-radius:5px;font-size:11.5px}
-  details>summary{cursor:pointer;font-weight:600;font-size:13px;color:var(--accent);list-style:none}
-  details>summary::-webkit-details-marker{display:none}
+  .btn.dang{color:var(--danger);border-color:transparent;background:transparent}
 </style>
 </head>
 <body>
@@ -138,35 +146,57 @@
   <!-- TOP BAR -->
   <div class="topbar">
     <div class="ava">✨</div>
-    <div>
-      <div class="brand">Loan Assistant<small id="subtitle">tracking Me &amp; Friend</small></div>
-    </div>
+    <div><div class="brand">Loan Assistant<small id="subtitle">from your LINE chat</small></div></div>
     <div class="spacer"></div>
-    <div class="pill" id="pill"><span class="d"></span><span id="pillText">฿0</span></div>
+    <div class="pill" id="pill"><span class="d"></span><span id="pillText">No data</span></div>
     <button class="iconbtn" onclick="openPanel()" aria-label="Settings">⚙️</button>
   </div>
 
-  <!-- CHAT THREAD -->
+  <!-- CHAT THREAD (read-only) -->
   <div class="thread" id="thread"></div>
 
-  <!-- COMPOSER -->
-  <div class="composer">
-    <div class="quick" id="quick">
-      <button class="chip" onclick="quick('+')">＋ Borrow</button>
-      <button class="chip" onclick="quick('-')">－ Repay</button>
+  <!-- IMPORT BAR (no manual entry) -->
+  <div class="importbar">
+    <div class="lead">This dashboard <b>reads your LINE chat</b> — it doesn't add entries. Import to refresh.</div>
+    <button class="btn-line" onclick="openSheet()">💬 Import from LINE</button>
+  </div>
+
+  <!-- IMPORT SHEET -->
+  <div class="scrim" id="scrim" onclick="closeAll()"></div>
+  <div class="sheet" id="sheet">
+    <div class="grab"></div>
+    <h2>Import from LINE</h2>
+    <p class="s">Paste your chat or upload the exported <code>.txt</code>. Importing <b>replaces</b> the current data so the dashboard always matches your latest LINE chat.</p>
+
+    <label class="drop" id="drop">
+      📄 <b>Tap to upload</b> your LINE export (.txt) — or drag it here
+      <input type="file" id="file" accept=".txt,text/plain" hidden />
+    </label>
+
+    <textarea class="paste" id="pText" placeholder="…or paste your LINE conversation here, e.g.&#10;2026/07/01&#10;12:04&#9;Tan&#9;+30 lunch&#10;12:30&#9;Me&#9;-10 paid back"></textarea>
+    <div class="prev" id="prev"></div>
+
+    <div class="row2">
+      <button class="btn" onclick="closeAll()">Cancel</button>
+      <button class="btn primary" id="importBtn" onclick="doImport()" disabled>Import &amp; refresh</button>
     </div>
-    <div class="cbox">
-      <textarea id="input" rows="1" placeholder="Type +30 lunch  ·  or  -10 paid back"></textarea>
-      <button class="send" id="send" onclick="send()" aria-label="Send">➤</button>
-    </div>
-    <div class="hint">+ = <b id="hintB">Friend</b> borrows · − = pays back. Paste your whole LINE chat to import many at once.</div>
+
+    <details class="help">
+      <summary>How to export your LINE chat</summary>
+      <div class="steps">
+        <ol>
+          <li>Open the LINE chat → tap the <b>≡</b> menu (top-right).</li>
+          <li>Choose <b>Other settings → Export chat history / Export text</b>.</li>
+          <li>Save/share the <b>.txt</b> file, then upload or paste it here.</li>
+        </ol>
+        Each line containing a <b>+</b> or <b>−</b> number becomes an entry (+ = borrow, − = repay). Other lines are ignored.
+      </div>
+    </details>
   </div>
 
   <!-- SETTINGS PANEL -->
-  <div class="scrim" id="scrim" onclick="closePanel()"></div>
   <div class="panel" id="panel">
-    <h2>Settings <button class="iconbtn" onclick="closePanel()" aria-label="Close">✕</button></h2>
-
+    <h2>Settings <button class="iconbtn" onclick="closeAll()" aria-label="Close">✕</button></h2>
     <div class="grp">
       <span class="lab">People</span>
       <div class="two">
@@ -175,33 +205,29 @@
       </div>
       <div style="margin-top:8px"><input class="fld" id="cur" value="฿" placeholder="Currency" style="width:90px" /></div>
     </div>
-
     <div class="grp">
       <span class="lab"><span class="dot" id="syncDot"></span>Shared sync <span id="syncStatus" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted)">— off</span></span>
       <details>
-        <summary>How to set up (once)</summary>
-        <div class="steps">
-          <ol>
-            <li><a href="https://console.firebase.google.com/" target="_blank" rel="noopener">Firebase console</a> → <b>Add project</b></li>
-            <li><b>Build → Realtime Database → Create</b> → <b>test mode</b></li>
-            <li>Settings ⚙ → <b>Your apps → Web &lt;/&gt;</b> → copy <code>firebaseConfig</code></li>
-            <li>Paste below, pick a room code, share both with your friend.</li>
-          </ol>
-        </div>
+        <summary style="cursor:pointer;font-weight:600;font-size:13px;color:var(--accent)">How to set up (once)</summary>
+        <div class="steps2"><ol>
+          <li><a href="https://console.firebase.google.com/" target="_blank" rel="noopener">Firebase console</a> → <b>Add project</b></li>
+          <li><b>Build → Realtime Database → Create</b> → <b>test mode</b></li>
+          <li>Settings ⚙ → <b>Your apps → Web &lt;/&gt;</b> → copy <code>firebaseConfig</code></li>
+          <li>Paste below, pick a room code, share both with your friend.</li>
+        </ol></div>
       </details>
       <textarea class="fld" id="fbCfg" rows="4" style="margin-top:8px;font-family:ui-monospace,monospace;font-size:12px" placeholder='const firebaseConfig = { …, databaseURL: "https://…firebaseio.com" }'></textarea>
       <div class="two" style="margin-top:8px">
         <div style="flex:2"><input class="fld" id="fbRoom" placeholder="room code e.g. me-tan-2026" /></div>
-        <div style="flex:1"><button class="btn primary" id="connectBtn" onclick="toggleConnect()">Connect</button></div>
+        <div style="flex:1"><button class="btn primary" id="connectBtn" onclick="toggleConnect()" style="padding:9px">Connect</button></div>
       </div>
-      <p style="font-size:11px;color:var(--muted);margin:8px 2px 0">Anyone with the config + room code can read/write. Use a hard-to-guess room code.</p>
+      <p style="font-size:11px;color:var(--muted);margin:8px 2px 0">Lets both phones see the same imported data. Anyone with the config + room code can read/write.</p>
     </div>
-
     <div class="grp">
       <span class="lab">Data</span>
       <div class="two">
-        <div><button class="btn" onclick="exportData()">Export JSON</button></div>
-        <div><button class="btn dang" onclick="clearAll()">Clear all</button></div>
+        <div><button class="btn" onclick="exportData()" style="padding:9px">Export JSON</button></div>
+        <div><button class="btn dang" onclick="clearAll()" style="padding:9px">Clear all</button></div>
       </div>
     </div>
     <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px">UI styled with UI/UX Pro Max · AI-Native</p>
@@ -215,6 +241,7 @@ const KEY="loanTracker.v1", SYNCKEY="loanTracker.sync";
 let state = load();
 let sync = loadSync();
 let dbRef=null, metaRef=null, connected=false;
+let pending=[]; // parsed rows waiting to import
 
 function load(){ try{ const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.entries) return s; }catch(e){}
   return {nameA:"Me", nameB:"Friend", cur:"฿", entries:[]}; }
@@ -241,73 +268,62 @@ function fmtTime(t){ const d=new Date(Math.floor((t||0)/1000)); const h=d.getHou
   });
 });
 
-/* ---------- entry add / delete ---------- */
-function pushEntry(e){ if(connected && dbRef) dbRef.push(e); else { state.entries.push(e); save(); render(); } }
-function del(i){ const e=state.entries[i];
-  if(connected && dbRef && e && e._key) dbRef.child(e._key).remove();
-  else { state.entries.splice(i,1); save(); render(); } }
-
-/* ---------- message parsing ---------- */
-// multi-line paste: every line with a signed number
+/* ---------- LINE chat parsing ---------- */
 function parseChat(text){
   const out=[];
   text.split(/\r?\n/).forEach(line=>{
     const m=line.match(/([+\-−])\s*(\d+(?:\.\d+)?)/); if(!m) return;
     const amt=parseFloat(m[2]); if(!amt) return;
+    // capture a leading HH:MM (LINE export prefixes each message with it) for display
+    const tm=(line.match(/^\s*(\d{1,2}[:.]\d{2})/)||[])[1]||"";
     let note=line.slice(0,m.index)+line.slice(m.index+m[0].length);
     note=note.replace(/^\s*\d{1,2}[:.]\d{2}\s*/,"").replace(/\s+/g," ").trim();
-    out.push({amt:(m[1]==="+"?1:-1)*amt, note, t:tstamp()});
+    out.push({amt:(m[1]==="+"?1:-1)*amt, note, tm, t:tstamp()});
   });
   return out;
 }
-// single composer message: allow natural language sign inference
-const REPAY_WORDS=/\b(paid|repaid|repay|return(ed)?|back|settle[d]?|give[sn]? back)\b/i;
-function parseMessage(text){
-  const lines=text.split(/\r?\n/).filter(l=>l.trim());
-  if(lines.length>1) return parseChat(text);            // treat as paste
-  const line=text.trim();
-  let m=line.match(/([+\-−])\s*(\d+(?:\.\d+)?)/);
-  if(m){ const amt=parseFloat(m[2]); if(!amt) return [];
-    let note=(line.slice(0,m.index)+line.slice(m.index+m[0].length)).replace(/\s+/g," ").trim();
-    return [{amt:(m[1]==="+"?1:-1)*amt, note, t:tstamp()}]; }
-  // no sign: find a number, infer from words
-  m=line.match(/(\d+(?:\.\d+)?)/); if(!m) return [];
-  const amt=parseFloat(m[1]); if(!amt) return [];
-  const sign=REPAY_WORDS.test(line)?-1:1;
-  let note=(line.slice(0,m.index)+line.slice(m.index+m[0].length)).replace(/\s+/g," ").trim();
-  return [{amt:sign*amt, note, t:tstamp()}];
-}
 
-/* ---------- composer ---------- */
-const input=document.getElementById("input");
-input.addEventListener("input",()=>{
-  input.style.height="auto"; input.style.height=Math.min(input.scrollHeight,120)+"px";
-  document.getElementById("send").disabled=!input.value.trim();
-});
-input.addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); send(); }});
-document.getElementById("send").disabled=true;
-function quick(sign){ input.value=sign; input.focus(); input.dispatchEvent(new Event("input")); }
-function send(){
-  const text=input.value.trim(); if(!text) return;
-  const rows=parseMessage(text);
-  if(!rows.length){ botSay("Hmm, I couldn't find an amount. Try <b>+30 lunch</b> (borrow) or <b>-10 paid back</b> (repay)."); }
-  else { rows.forEach(r=>pushEntry(r)); if(rows.length>1) flashTyping(); }
-  input.value=""; input.style.height="auto"; document.getElementById("send").disabled=true; input.focus();
-}
-// transient bot message (not persisted) — for errors/help
-let transient=[];
-function botSay(html){ transient.push({html, t:tstamp()}); render(); }
-let typing=false;
-function flashTyping(){ typing=true; render(); setTimeout(()=>{ typing=false; render(); }, 500); }
-
-/* ---------- settings panel ---------- */
+/* ---------- import flow ---------- */
+function openSheet(){ document.getElementById("sheet").classList.add("open"); document.getElementById("scrim").classList.add("open"); }
 function openPanel(){ document.getElementById("panel").classList.add("open"); document.getElementById("scrim").classList.add("open"); }
-function closePanel(){ document.getElementById("panel").classList.remove("open"); document.getElementById("scrim").classList.remove("open"); }
+function closeAll(){ ["sheet","panel","scrim"].forEach(id=>document.getElementById(id).classList.remove("open")); }
+
+const pText=document.getElementById("pText");
+pText.addEventListener("input",()=>previewFrom(pText.value));
+function previewFrom(text){
+  pending=parseChat(text);
+  const box=document.getElementById("prev"), btn=document.getElementById("importBtn");
+  if(!text.trim()){ box.textContent=""; btn.disabled=true; return; }
+  if(!pending.length){ box.innerHTML="⚠️ No <b>+</b>/<b>−</b> amounts found in that text."; btn.disabled=true; return; }
+  const bal=pending.reduce((s,e)=>s+e.amt,0);
+  btn.disabled=false;
+  box.innerHTML="✓ Found <b>"+pending.length+"</b> entries · new balance <b>"+money(Math.abs(bal))+"</b> "+
+    (bal>0?"("+escapeHtml(state.nameB||"Friend")+" owes)":bal<0?"("+escapeHtml(state.nameA||"Me")+" owes)":"(settled)");
+}
+// file upload
+const fileInput=document.getElementById("file"), drop=document.getElementById("drop");
+fileInput.addEventListener("change",e=>{ const f=e.target.files[0]; if(f) readFile(f); });
+drop.addEventListener("dragover",e=>{e.preventDefault();});
+drop.addEventListener("drop",e=>{e.preventDefault(); const f=e.dataTransfer.files[0]; if(f) readFile(f);});
+function readFile(f){ const r=new FileReader(); r.onload=()=>{ pText.value=r.result; previewFrom(r.result); }; r.readAsText(f); }
+
+function doImport(){
+  if(!pending.length) return;
+  const rows=pending.map(r=>({amt:r.amt, note:r.note||"", tm:r.tm||"", t:tstamp()}));
+  if(connected && dbRef){
+    dbRef.set(null).then(()=>{ rows.forEach(r=>dbRef.push(r)); }); // replace remote
+  } else {
+    state.entries=rows; save(); render();
+  }
+  pText.value=""; pending=[]; document.getElementById("prev").textContent="";
+  document.getElementById("importBtn").disabled=true; closeAll();
+}
+
 function exportData(){
   const blob=new Blob([JSON.stringify({...state,entries:state.entries.map(({_key,...e})=>e)},null,2)],{type:"application/json"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="loan-tracker.json"; a.click();
 }
-function clearAll(){ if(!confirm("Delete all entries?")) return;
+function clearAll(){ if(!confirm("Clear all imported data?")) return;
   if(connected && dbRef) dbRef.remove(); else { state.entries=[]; save(); render(); } }
 
 /* ---------- Firebase sync ---------- */
@@ -316,8 +332,7 @@ function parseCfg(text){ const s=text.indexOf("{"), e=text.lastIndexOf("}");
   const obj=new Function("return ("+text.slice(s,e+1)+")")();
   if(!obj.databaseURL) throw new Error("Config has no databaseURL — create a Realtime Database first.");
   return obj; }
-function setStatus(text,cls){
-  document.getElementById("syncStatus").textContent="— "+text;
+function setStatus(text,cls){ document.getElementById("syncStatus").textContent="— "+text;
   document.getElementById("syncDot").className="dot"+(cls?(" "+cls):""); }
 function toggleConnect(){
   if(connected){ disconnect(); return; }
@@ -335,7 +350,7 @@ function connect(){
     const base="rooms/"+sync.room.replace(/[.#$\[\]\/]/g,"_");
     dbRef=db.ref(base+"/entries"); metaRef=db.ref(base+"/meta");
     dbRef.once("value").then(snap=>{ if(!snap.exists() && state.entries.length)
-      state.entries.forEach(e=>dbRef.push({amt:e.amt,note:e.note||"",t:e.t||tstamp()})); });
+      state.entries.forEach(e=>dbRef.push({amt:e.amt,note:e.note||"",tm:e.tm||"",t:e.t||tstamp()})); });
     metaRef.on("value",snap=>{ const m=snap.val(); if(!m) return;
       if(m.nameA!=null){state.nameA=m.nameA;document.getElementById("nameA").value=m.nameA;}
       if(m.nameB!=null){state.nameB=m.nameB;document.getElementById("nameB").value=m.nameB;}
@@ -352,7 +367,7 @@ function disconnect(){ try{ if(dbRef)dbRef.off(); if(metaRef)metaRef.off(); }cat
   connected=false; dbRef=null; metaRef=null;
   document.getElementById("connectBtn").textContent="Connect"; setStatus("off",""); save(); render(); }
 
-/* ---------- sparkline for context card ---------- */
+/* ---------- sparkline ---------- */
 function sparkline(){
   const es=state.entries; if(es.length<2) return "";
   const W=280,H=54,pad=4; let run=0; const pts=[0];
@@ -368,59 +383,54 @@ function sparkline(){
     '<path d="'+line+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>';
 }
 
-/* ---------- render the conversation ---------- */
+/* ---------- render (display only) ---------- */
 function render(){
   const A=state.nameA||"Me", B=state.nameB||"Friend";
-  document.getElementById("hintB").textContent=B;
-  document.getElementById("subtitle").textContent="tracking "+A+" & "+B;
+  document.getElementById("subtitle").textContent="from your LINE chat · "+A+" & "+B;
 
   const bal=state.entries.reduce((s,e)=>s+e.amt,0);
   const borrowed=state.entries.filter(e=>e.amt>0).reduce((s,e)=>s+e.amt,0);
   const repaid=state.entries.filter(e=>e.amt<0).reduce((s,e)=>s-e.amt,0);
 
-  // top pill
   const pill=document.getElementById("pill"), pt=document.getElementById("pillText");
   pill.className="pill "+(bal>0?"pos":bal<0?"neg":"");
-  pt.textContent = !state.entries.length ? "No entries"
+  pt.textContent = !state.entries.length ? "No data"
     : bal>0 ? (B+" owes "+money(bal)) : bal<0 ? (A+" owes "+money(Math.abs(bal))) : "Settled";
 
   const t=document.getElementById("thread");
-  let html = '<div class="day">Loan Assistant</div>'+
-    '<div class="msg ai"><div class="mava">✨</div><div><div class="bubble">Hi! I keep the running total between <b>'+escapeHtml(A)+'</b> and <b>'+escapeHtml(B)+'</b>.<br>Type <b>+30 lunch</b> when '+escapeHtml(B)+' borrows, or <b>-10 paid back</b> when they repay.</div></div></div>';
 
-  let run=0;
-  state.entries.forEach((e,i)=>{
-    run+=e.amt;
-    const noteTxt=e.note?escapeHtml(e.note):"";
-    // user message = the entry
-    html+='<div class="msg user"><div class="mava">🧑</div><div style="min-width:0">'+
-      '<div class="bubble"><span class="amt">'+(e.amt<0?"−":"+")+money(Math.abs(e.amt))+'</span>'+(noteTxt?'  '+noteTxt:'')+
-      '<button class="del" title="Delete" onclick="del('+i+')">✕</button></div>'+
-      '<div class="time">'+fmtTime(e.t)+'</div></div></div>';
-    // assistant confirmation
-    const verb=e.amt<0?"repaid":"borrowed";
-    let who = run>0?(B+" owes "+A+" "+money(run)) : run<0?(A+" owes "+B+" "+money(Math.abs(run))) : "You're all settled 🎉";
-    html+='<div class="msg ai"><div class="mava">✨</div><div><div class="bubble">'+
-      escapeHtml(B)+' '+verb+' <b>'+money(Math.abs(e.amt))+'</b>'+(noteTxt?' ('+noteTxt+')':'')+'. → <b>'+who+'</b>.'+
-      '</div><div class="time">'+fmtTime(e.t)+'</div></div></div>';
-  });
-
-  // pinned context card (current balance) after the conversation
-  if(state.entries.length){
-    const cls=bal>0?"pos":bal<0?"neg":"";
-    const who = bal>0?(B+" owes "+A) : bal<0?(A+" owes "+B) : "All settled";
-    html+='<div class="ctx"><div class="who">'+escapeHtml(who)+'</div>'+
-      '<div class="big '+cls+'">'+(bal===0?"🎉":money(Math.abs(bal)))+'</div>'+
-      '<div class="row"><span>Borrowed <b>'+money(borrowed)+'</b></span><span>Repaid <b>'+money(repaid)+'</b></span><span><b>'+state.entries.length+'</b> entries</span></div>'+
-      sparkline()+'</div>';
+  if(!state.entries.length){
+    t.innerHTML='<div class="empty"><div class="ic">💬</div>'+
+      '<h3>No data yet</h3><p>Import your LINE chat and I\'ll add up who owes whom. Nothing is added here manually — the numbers come straight from LINE.</p>'+
+      '<button class="btn-line" onclick="openSheet()" style="margin:0 auto">💬 Import from LINE</button></div>';
+    return;
   }
 
-  // transient/help + typing
-  transient.forEach(m=>{ html+='<div class="msg ai"><div class="mava">✨</div><div><div class="bubble">'+m.html+'</div></div></div>'; });
-  if(typing) html+='<div class="msg ai"><div class="mava">✨</div><div class="bubble typing"><i></i><i></i><i></i></div></div>';
+  let html='<div class="day">Loan Assistant · from LINE</div>'+
+    '<div class="msg ai"><div class="mava">✨</div><div><div class="bubble">Here\'s your LINE ledger between <b>'+escapeHtml(A)+'</b> and <b>'+escapeHtml(B)+'</b>. Re-import anytime to refresh.</div></div></div>';
 
-  t.innerHTML=html;
-  t.scrollTop=t.scrollHeight;
+  let run=0;
+  state.entries.forEach((e)=>{
+    run+=e.amt;
+    const noteTxt=e.note?escapeHtml(e.note):"";
+    const when=e.tm||fmtTime(e.t);
+    html+='<div class="msg user"><div class="mava">🧑</div><div style="min-width:0">'+
+      '<div class="bubble"><span class="amt">'+(e.amt<0?"−":"+")+money(Math.abs(e.amt))+'</span>'+(noteTxt?'  '+noteTxt:'')+'</div>'+
+      '<div class="time">'+escapeHtml(when)+'</div></div></div>';
+    const verb=e.amt<0?"repaid":"borrowed";
+    const who = run>0?(B+" owes "+A+" "+money(run)) : run<0?(A+" owes "+B+" "+money(Math.abs(run))) : "all settled 🎉";
+    html+='<div class="msg ai"><div class="mava">✨</div><div><div class="bubble">'+
+      escapeHtml(B)+' '+verb+' <b>'+money(Math.abs(e.amt))+'</b>'+(noteTxt?' ('+noteTxt+')':'')+'. → <b>'+who+'</b>.</div></div></div>';
+  });
+
+  const cls=bal>0?"pos":bal<0?"neg":"";
+  const who = bal>0?(B+" owes "+A) : bal<0?(A+" owes "+B) : "All settled";
+  html+='<div class="ctx"><div class="who">'+escapeHtml(who)+'</div>'+
+    '<div class="big '+cls+'">'+(bal===0?"🎉":money(Math.abs(bal)))+'</div>'+
+    '<div class="row"><span>Borrowed <b>'+money(borrowed)+'</b></span><span>Repaid <b>'+money(repaid)+'</b></span><span><b>'+state.entries.length+'</b> entries</span></div>'+
+    sparkline()+'</div>';
+
+  t.innerHTML=html; t.scrollTop=t.scrollHeight;
 }
 
 /* ---------- boot ---------- */
