@@ -8,9 +8,8 @@
   :root{
     --bg:#f4f5f7; --panel:#ffffff; --ink:#1a1c1e; --muted:#5b6169;
     --line:#e4e7eb; --accent:#3b6ef5; --accent-ink:#ffffff;
-    --pos:#0f9d58;      /* borrow / owes you */
-    --neg:#d93f3f;      /* return / you owe */
-    --chip:#eef1f6;
+    --pos:#0f9d58; --neg:#d93f3f; --chip:#eef1f6;
+    --ok:#0f9d58; --warn:#d98a00;
     --shadow:0 1px 2px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.06);
   }
   @media (prefers-color-scheme: dark){
@@ -18,6 +17,7 @@
       --bg:#0f1216; --panel:#171b21; --ink:#e9edf2; --muted:#98a2b0;
       --line:#262c34; --accent:#5b86ff; --accent-ink:#0b0e12;
       --pos:#3ddc84; --neg:#ff6b6b; --chip:#20262e;
+      --ok:#3ddc84; --warn:#ffb443;
       --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
     }
   }
@@ -30,7 +30,6 @@
   .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;
     padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
   .names{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  .names input{flex:1;min-width:120px}
   input,textarea,button,select{font:inherit;color:inherit}
   input,textarea,select{background:var(--chip);border:1px solid var(--line);
     border-radius:10px;padding:10px 12px;width:100%}
@@ -49,7 +48,6 @@
   .seg button{flex:1}
   .seg button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);border-color:transparent}
 
-  /* Balance hero */
   .hero{text-align:center;padding:22px 16px}
   .hero .who{font-size:14px;color:var(--muted);margin-bottom:6px}
   .hero .amt{font-size:40px;font-weight:800;letter-spacing:-.02em;line-height:1}
@@ -62,7 +60,6 @@
   .stat .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
   .stat .v{font-size:18px;font-weight:700;margin-top:2px}
 
-  /* history */
   .h-item{display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--line)}
   .h-item:last-child{border-bottom:none}
   .h-amt{font-weight:700;font-variant-numeric:tabular-nums;min-width:74px;text-align:right}
@@ -75,27 +72,71 @@
   .legend{font-size:12px;color:var(--muted);margin-top:6px;text-align:center}
   .foot{color:var(--muted);font-size:12px;text-align:center;margin:8px 0 24px}
   .foot button{padding:4px 8px;font-size:12px}
+
+  /* sync */
+  .sync-head{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--muted);display:inline-block;margin-right:7px;vertical-align:middle}
+  .dot.on{background:var(--ok)} .dot.err{background:var(--neg)} .dot.wait{background:var(--warn)}
+  .status{font-size:13px;color:var(--muted)}
+  details.sync>summary{list-style:none} details.sync>summary::-webkit-details-marker{display:none}
+  .steps{font-size:13px;color:var(--muted);background:var(--chip);border-radius:10px;padding:12px;margin:10px 0}
+  .steps ol{margin:6px 0 0;padding-left:18px} .steps li{margin:4px 0}
+  .steps a{color:var(--accent)}
+  code{background:var(--chip);padding:1px 5px;border-radius:5px;font-size:12px}
+  .banner{font-size:12px;color:var(--muted);text-align:center;margin:-6px 0 12px}
 </style>
 </head>
 <body>
 
 <h1>💸 Loan Tracker</h1>
-<p class="sub">+ means <b id="lblBorrowHint">Friend</b> borrows · − means they pay back. Everything saves in this browser.</p>
+<p class="sub">+ means <b id="lblBorrowHint">Friend</b> borrows · − means they pay back.</p>
+<div class="banner" id="modeBanner">Working offline — data saved on this device only</div>
+
+<!-- SYNC -->
+<div class="card">
+  <details class="sync" id="syncDetails">
+    <summary class="sync-head">
+      <div><span class="dot" id="syncDot"></span><b>Shared sync</b></div>
+      <div class="status" id="syncStatus">Off · tap to set up</div>
+    </summary>
+
+    <div class="steps">
+      <b>One-time setup (do this once, share the same values with your friend):</b>
+      <ol>
+        <li>Go to <a href="https://console.firebase.google.com/" target="_blank" rel="noopener">console.firebase.google.com</a> → <b>Add project</b> (skip Analytics).</li>
+        <li>Left menu → <b>Build → Realtime Database</b> → <b>Create Database</b> → choose a location → start in <b>test mode</b>.</li>
+        <li>Project settings (⚙) → <b>General</b> → scroll to <b>Your apps</b> → <b>Web (&lt;/&gt;)</b> → register → copy the <code>firebaseConfig = {…}</code> block.</li>
+        <li>Paste it below. Pick any <b>room code</b> and give your friend the same config + room code.</li>
+      </ol>
+    </div>
+
+    <label>Firebase config</label>
+    <textarea id="fbCfg" placeholder='const firebaseConfig = {
+  apiKey: "…",
+  authDomain: "…",
+  databaseURL: "https://your-project.firebaseio.com",
+  projectId: "…"
+};'></textarea>
+    <div class="row" style="margin-top:10px">
+      <div style="flex:2">
+        <label>Room code (both use the same)</label>
+        <input id="fbRoom" placeholder="e.g. me-and-tan-2026" />
+      </div>
+      <div style="flex:0 0 auto;display:flex;align-items:flex-end">
+        <button class="primary" id="connectBtn" onclick="toggleConnect()">Connect</button>
+      </div>
+    </div>
+    <p class="h-meta" id="syncHint" style="margin:8px 2px 0">
+      Privacy: anyone with your config + room code can read/write the data. Use a hard-to-guess room code. Fine for lunch money; don't store secrets.
+    </p>
+  </details>
+</div>
 
 <div class="card">
   <div class="names">
-    <div style="flex:1">
-      <label>Lender (you)</label>
-      <input id="nameA" value="Me" />
-    </div>
-    <div style="flex:1">
-      <label>Borrower</label>
-      <input id="nameB" value="Friend" />
-    </div>
-    <div style="flex:0 0 90px">
-      <label>Currency</label>
-      <input id="cur" value="฿" />
-    </div>
+    <div style="flex:1"><label>Lender (you)</label><input id="nameA" value="Me" /></div>
+    <div style="flex:1"><label>Borrower</label><input id="nameB" value="Friend" /></div>
+    <div style="flex:0 0 90px"><label>Currency</label><input id="cur" value="฿" /></div>
   </div>
 </div>
 
@@ -126,29 +167,18 @@
     <div class="row">
       <div style="flex:0 0 auto">
         <label>Type</label>
-        <select id="fType">
-          <option value="1">+ Borrow</option>
-          <option value="-1">− Repay</option>
-        </select>
+        <select id="fType"><option value="1">+ Borrow</option><option value="-1">− Repay</option></select>
       </div>
-      <div>
-        <label>Amount</label>
-        <input id="fAmt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="30" />
-      </div>
+      <div><label>Amount</label><input id="fAmt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="30" /></div>
     </div>
-    <div style="margin-top:10px">
-      <label>Note (optional)</label>
-      <input id="fNote" placeholder="lunch, taxi, …" />
-    </div>
-    <div style="margin-top:12px;display:flex;gap:10px">
-      <button class="primary" style="flex:1" onclick="addForm()">Add</button>
-    </div>
+    <div style="margin-top:10px"><label>Note (optional)</label><input id="fNote" placeholder="lunch, taxi, …" /></div>
+    <div style="margin-top:12px"><button class="primary" style="width:100%" onclick="addForm()">Add</button></div>
   </div>
 
   <div id="panePaste" hidden>
     <label>Paste your LINE conversation</label>
-    <textarea id="pText" placeholder="Paste chat lines here, e.g.&#10;+30 lunch&#10;-10 paid back&#10;12:04 +50 taxi"></textarea>
-    <p class="h-meta" style="margin:8px 0">Each line with a <b>+</b> or <b>−</b> number becomes an entry. Text after the number is kept as the note. Lines without a signed number are skipped.</p>
+    <textarea id="pText" placeholder="+30 lunch&#10;-10 paid back&#10;12:04 +50 taxi"></textarea>
+    <p class="h-meta" style="margin:8px 0">Each line with a <b>+</b> or <b>−</b> number becomes an entry. Text after the number is the note.</p>
     <div style="display:flex;gap:10px">
       <button class="ghost" style="flex:1" onclick="previewPaste()">Preview</button>
       <button class="primary" style="flex:1" onclick="importPaste()">Import</button>
@@ -166,25 +196,34 @@
   <div id="history"><div class="empty">No entries yet</div></div>
 </div>
 
-<div class="foot">
-  <button class="danger" onclick="clearAll()">Clear all data</button>
-</div>
+<div class="foot"><button class="danger" onclick="clearAll()">Clear all data</button></div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
-const KEY="loanTracker.v1";
+const KEY="loanTracker.v1", SYNCKEY="loanTracker.sync";
 let state = load();
+let sync = loadSync();          // {cfg, room}
+let dbRef=null, metaRef=null, connected=false;
 
 function load(){
   try{ const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.entries) return s; }catch(e){}
   return {nameA:"Me", nameB:"Friend", cur:"฿", entries:[]};
 }
-function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+function save(){ if(!connected) localStorage.setItem(KEY, JSON.stringify(state)); }
+function loadSync(){ try{ return JSON.parse(localStorage.getItem(SYNCKEY))||{}; }catch(e){ return {}; } }
+function saveSync(){ localStorage.setItem(SYNCKEY, JSON.stringify(sync)); }
 
-// wire name/currency inputs
+/* ---------- names / currency ---------- */
 ["nameA","nameB","cur"].forEach(id=>{
   const el=document.getElementById(id);
   el.value = state[id] || el.value;
-  el.addEventListener("input",()=>{ state[id]=el.value; save(); render(); });
+  el.addEventListener("input",()=>{
+    state[id]=el.value;
+    if(connected && metaRef) metaRef.set({nameA:state.nameA,nameB:state.nameB,cur:state.cur});
+    else save();
+    render();
+  });
 });
 
 function money(n){
@@ -202,35 +241,43 @@ function showTab(which){
   document.getElementById("tabPaste").setAttribute("aria-selected",!f);
 }
 
+/* ---------- add / delete (routes to Firebase when connected) ---------- */
+function pushEntry(e){
+  if(connected && dbRef){ dbRef.push(e); }
+  else { state.entries.push(e); save(); render(); }
+}
 function addForm(){
   const sign = parseInt(document.getElementById("fType").value,10);
   const amt = parseFloat(document.getElementById("fAmt").value);
   if(!amt || amt<=0){ document.getElementById("fAmt").focus(); return; }
   const note = document.getElementById("fNote").value.trim();
-  state.entries.push({amt: sign*amt, note, t: Date.now()});
-  document.getElementById("fAmt").value="";
-  document.getElementById("fNote").value="";
-  save(); render();
+  pushEntry({amt: sign*amt, note, t: tstamp()});
+  document.getElementById("fAmt").value=""; document.getElementById("fNote").value="";
+}
+function del(i){
+  const e = state.entries[i];
+  if(connected && dbRef && e && e._key){ dbRef.child(e._key).remove(); }
+  else { state.entries.splice(i,1); save(); render(); }
+}
+function tstamp(){ // avoid Date collisions in same ms
+  return Date.now()*1000 + Math.floor(performance.now()%1000);
 }
 
-// Parse a chat blob into entries. Grab the first signed number on each line.
+/* ---------- LINE chat parsing ---------- */
 function parseChat(text){
   const out=[];
   text.split(/\r?\n/).forEach(line=>{
-    // match +30 / -30 / +30.5 (allow the unicode minus too)
     const m = line.match(/([+\-−])\s*(\d+(?:\.\d+)?)/);
     if(!m) return;
     const sign = (m[1]==="+")?1:-1;
     const amt = parseFloat(m[2]);
     if(!amt) return;
-    // note = the line with the matched amount removed, trimmed of timestamps
     let note = line.slice(0, m.index) + line.slice(m.index + m[0].length);
     note = note.replace(/^\s*\d{1,2}[:.]\d{2}\s*/,"").replace(/\s+/g," ").trim();
-    out.push({amt: sign*amt, note, t: Date.now()});
+    out.push({amt: sign*amt, note, t: tstamp()});
   });
   return out;
 }
-
 function previewPaste(){
   const rows = parseChat(document.getElementById("pText").value);
   const box = document.getElementById("pPreview");
@@ -242,29 +289,97 @@ function previewPaste(){
 function importPaste(){
   const rows = parseChat(document.getElementById("pText").value);
   if(!rows.length){ document.getElementById("pPreview").innerHTML='<p class="h-meta">Nothing to import.</p>'; return; }
-  state.entries.push(...rows);
-  document.getElementById("pText").value="";
-  document.getElementById("pPreview").innerHTML="";
-  save(); render();
+  rows.forEach(r=>pushEntry(r));
+  document.getElementById("pText").value=""; document.getElementById("pPreview").innerHTML="";
 }
-
-function del(i){ state.entries.splice(i,1); save(); render(); }
 
 function clearAll(){
-  if(confirm("Delete all entries? This cannot be undone.")){
-    state.entries=[]; save(); render();
-  }
+  if(!confirm("Delete all entries? This cannot be undone.")) return;
+  if(connected && dbRef){ dbRef.remove(); }
+  else { state.entries=[]; save(); render(); }
 }
 function exportData(){
-  const blob = new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+  const blob = new Blob([JSON.stringify({...state, entries: state.entries.map(({_key,...e})=>e)},null,2)],{type:"application/json"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
   a.download="loan-tracker.json"; a.click();
 }
 
+/* ---------- Firebase sync ---------- */
+function parseCfg(text){
+  const s = text.indexOf("{"), e = text.lastIndexOf("}");
+  if(s<0||e<0) throw new Error("Couldn't find a { … } config object.");
+  const obj = new Function("return ("+text.slice(s,e+1)+")")();
+  if(!obj.databaseURL) throw new Error("Config has no databaseURL — make sure you created a Realtime Database.");
+  return obj;
+}
+function setStatus(text, cls){
+  document.getElementById("syncStatus").textContent=text;
+  document.getElementById("syncDot").className="dot"+(cls?(" "+cls):"");
+  document.getElementById("modeBanner").textContent =
+    connected ? ("Synced live to room “"+sync.room+"” — both devices share this data")
+              : "Working offline — data saved on this device only";
+}
+function toggleConnect(){
+  if(connected){ disconnect(); return; }
+  const cfgText = document.getElementById("fbCfg").value.trim();
+  const room = document.getElementById("fbRoom").value.trim();
+  if(!cfgText || !room){ setStatus("Enter config and a room code", "err"); return; }
+  let cfg;
+  try{ cfg = parseCfg(cfgText); }catch(err){ setStatus(err.message, "err"); return; }
+  sync = {cfg, room}; saveSync();
+  connect();
+}
+function connect(){
+  if(typeof firebase==="undefined"){ setStatus("Firebase failed to load (no internet?)", "err"); return; }
+  setStatus("Connecting…", "wait");
+  try{
+    if(!firebase.apps.length) firebase.initializeApp(sync.cfg);
+    const db = firebase.database();
+    const base = "rooms/"+sync.room.replace(/[.#$\[\]\/]/g,"_");
+    dbRef = db.ref(base+"/entries");
+    metaRef = db.ref(base+"/meta");
+
+    // migrate existing local entries into an empty room, once
+    dbRef.once("value").then(snap=>{
+      if(!snap.exists() && state.entries.length){
+        state.entries.forEach(e=>dbRef.push({amt:e.amt,note:e.note||"",t:e.t||tstamp()}));
+      }
+    });
+
+    metaRef.on("value", snap=>{
+      const m = snap.val(); if(!m) return;
+      if(m.nameA!=null){ state.nameA=m.nameA; document.getElementById("nameA").value=m.nameA; }
+      if(m.nameB!=null){ state.nameB=m.nameB; document.getElementById("nameB").value=m.nameB; }
+      if(m.cur!=null){ state.cur=m.cur; document.getElementById("cur").value=m.cur; }
+      render();
+    });
+    dbRef.on("value", snap=>{
+      const val = snap.val()||{};
+      state.entries = Object.keys(val).map(k=>({_key:k, ...val[k]})).sort((a,b)=>(a.t||0)-(b.t||0));
+      connected = true;
+      setStatus("Connected · room “"+sync.room+"”", "on");
+      document.getElementById("connectBtn").textContent="Disconnect";
+      render();
+    }, err=>{ setStatus("Error: "+err.message, "err"); });
+
+    db.ref(".info/connected").on("value", s=>{
+      if(connected) setStatus(s.val()? ("Connected · room “"+sync.room+"”") : "Reconnecting…", s.val()?"on":"wait");
+    });
+  }catch(err){ setStatus("Error: "+err.message, "err"); }
+}
+function disconnect(){
+  try{ if(dbRef) dbRef.off(); if(metaRef) metaRef.off(); }catch(e){}
+  connected=false; dbRef=null; metaRef=null;
+  document.getElementById("connectBtn").textContent="Connect";
+  setStatus("Off · tap to set up", "");
+  // keep last-seen entries locally
+  save(); render();
+}
+
+/* ---------- chart + render ---------- */
 function drawChart(){
   const svg=document.getElementById("chart");
-  const W=600,H=120,pad=8;
-  const es=state.entries;
+  const W=600,H=120,pad=8, es=state.entries;
   if(!es.length){ svg.innerHTML=""; return; }
   let run=0; const pts=[{x:0,y:0}];
   es.forEach(e=>{ run+=e.amt; pts.push({x:pts.length, y:run}); });
@@ -284,11 +399,11 @@ function drawChart(){
     '<path d="'+line+'" fill="none" stroke="'+col+'" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>'+
     '<circle cx="'+X(nx).toFixed(1)+'" cy="'+Y(last).toFixed(1)+'" r="3.5" fill="'+col+'"/>';
 }
+function escapeHtml(s){return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
 
 function render(){
   const A=state.nameA||"Me", B=state.nameB||"Friend";
   document.getElementById("lblBorrowHint").textContent=B;
-
   const bal = state.entries.reduce((s,e)=>s+e.amt,0);
   const borrowed = state.entries.filter(e=>e.amt>0).reduce((s,e)=>s+e.amt,0);
   const repaid = state.entries.filter(e=>e.amt<0).reduce((s,e)=>s-e.amt,0);
@@ -296,7 +411,6 @@ function render(){
   const amtEl=document.getElementById("heroAmt");
   amtEl.textContent = money(Math.abs(bal));
   amtEl.className = "amt "+(bal>0?"pos":bal<0?"neg":"zero");
-
   const who=document.getElementById("heroWho"), note=document.getElementById("heroNote");
   if(!state.entries.length){ who.textContent="Current balance"; note.textContent="No entries yet"; }
   else if(bal>0){ who.textContent=B+" owes "+A; note.textContent="Outstanding balance"; }
@@ -304,26 +418,32 @@ function render(){
   else { who.textContent="All settled 🎉"; note.textContent="Nobody owes anything"; }
 
   document.getElementById("statBorrow").textContent=money(borrowed);
-  document.getElementById("statRepay").textContent="−"+money(repaid).replace("−","");
+  document.getElementById("statRepay").textContent = repaid? ("−"+money(repaid)) : money(0);
   document.getElementById("statCount").textContent=state.entries.length;
 
   const h=document.getElementById("history");
   if(!state.entries.length){ h.innerHTML='<div class="empty">No entries yet</div>'; }
   else{
-    h.innerHTML = state.entries.map((e,i)=>{
-      const idx = state.entries.length-i; // original order number
-      return '<div class="h-item">'+
-        '<div class="h-body"><div class="h-note">'+(escapeHtml(e.note)||(e.amt>0?"Borrowed":"Repaid"))+'</div>'+
+    h.innerHTML = state.entries.map((e,i)=>
+      '<div class="h-item"><div class="h-body">'+
+        '<div class="h-note">'+(escapeHtml(e.note)||(e.amt>0?"Borrowed":"Repaid"))+'</div>'+
         '<div class="h-meta">#'+(i+1)+(e.amt>0?" · borrow":" · repay")+'</div></div>'+
         '<div class="h-amt '+(e.amt<0?"neg":"pos")+'">'+(e.amt<0?"−":"+")+money(Math.abs(e.amt))+'</div>'+
-        '<button class="danger" onclick="del('+i+')">✕</button>'+
-      '</div>';
-    }).join("");
+        '<button class="danger" onclick="del('+i+')">✕</button></div>'
+    ).join("");
   }
   drawChart();
 }
-function escapeHtml(s){return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
 
+/* ---------- boot ---------- */
+if(sync && sync.cfg && sync.room){
+  document.getElementById("fbCfg").value = "const firebaseConfig = "+JSON.stringify(sync.cfg,null,2)+";";
+  document.getElementById("fbRoom").value = sync.room;
+  document.getElementById("syncDetails").open = false;
+  connect();
+} else {
+  setStatus("Off · tap to set up", "");
+}
 render();
 </script>
 </body>
