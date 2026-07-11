@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Loan Tracker</title>
+<style>
+  :root{
+    --bg:#f4f5f7; --panel:#ffffff; --ink:#1a1c1e; --muted:#5b6169;
+    --line:#e4e7eb; --accent:#3b6ef5; --accent-ink:#ffffff;
+    --pos:#0f9d58;      /* borrow / owes you */
+    --neg:#d93f3f;      /* return / you owe */
+    --chip:#eef1f6;
+    --shadow:0 1px 2px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0f1216; --panel:#171b21; --ink:#e9edf2; --muted:#98a2b0;
+      --line:#262c34; --accent:#5b86ff; --accent-ink:#0b0e12;
+      --pos:#3ddc84; --neg:#ff6b6b; --chip:#20262e;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans Thai",sans-serif;
+    padding:16px;max-width:760px;margin:0 auto;-webkit-text-size-adjust:100%}
+  h1{font-size:20px;margin:4px 0 2px}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 16px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
+  .names{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .names input{flex:1;min-width:120px}
+  input,textarea,button,select{font:inherit;color:inherit}
+  input,textarea,select{background:var(--chip);border:1px solid var(--line);
+    border-radius:10px;padding:10px 12px;width:100%}
+  textarea{resize:vertical;min-height:96px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px}
+  label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px;font-weight:600;
+    text-transform:uppercase;letter-spacing:.03em}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .row>div{flex:1;min-width:120px}
+  button{cursor:pointer;border:1px solid var(--line);background:var(--chip);
+    border-radius:10px;padding:10px 14px;font-weight:600;transition:.12s}
+  button:active{transform:translateY(1px)}
+  button.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+  button.ghost{background:transparent}
+  button.danger{color:var(--neg);border-color:transparent;background:transparent;padding:6px 8px}
+  .seg{display:flex;gap:8px;margin-bottom:10px}
+  .seg button{flex:1}
+  .seg button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+
+  /* Balance hero */
+  .hero{text-align:center;padding:22px 16px}
+  .hero .who{font-size:14px;color:var(--muted);margin-bottom:6px}
+  .hero .amt{font-size:40px;font-weight:800;letter-spacing:-.02em;line-height:1}
+  .hero .amt.pos{color:var(--pos)} .hero .amt.neg{color:var(--neg)}
+  .hero .amt.zero{color:var(--ink)}
+  .hero .note{font-size:13px;color:var(--muted);margin-top:8px}
+
+  .stats{display:flex;gap:10px;margin-top:14px}
+  .stat{flex:1;background:var(--chip);border-radius:12px;padding:10px 12px;text-align:center}
+  .stat .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .stat .v{font-size:18px;font-weight:700;margin-top:2px}
+
+  /* history */
+  .h-item{display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--line)}
+  .h-item:last-child{border-bottom:none}
+  .h-amt{font-weight:700;font-variant-numeric:tabular-nums;min-width:74px;text-align:right}
+  .h-amt.pos{color:var(--pos)} .h-amt.neg{color:var(--neg)}
+  .h-body{flex:1;min-width:0}
+  .h-note{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .h-meta{font-size:12px;color:var(--muted)}
+  .empty{color:var(--muted);text-align:center;padding:24px 0}
+  svg{display:block;width:100%;height:120px}
+  .legend{font-size:12px;color:var(--muted);margin-top:6px;text-align:center}
+  .foot{color:var(--muted);font-size:12px;text-align:center;margin:8px 0 24px}
+  .foot button{padding:4px 8px;font-size:12px}
+</style>
+</head>
+<body>
+
+<h1>💸 Loan Tracker</h1>
+<p class="sub">+ means <b id="lblBorrowHint">Friend</b> borrows · − means they pay back. Everything saves in this browser.</p>
+
+<div class="card">
+  <div class="names">
+    <div style="flex:1">
+      <label>Lender (you)</label>
+      <input id="nameA" value="Me" />
+    </div>
+    <div style="flex:1">
+      <label>Borrower</label>
+      <input id="nameB" value="Friend" />
+    </div>
+    <div style="flex:0 0 90px">
+      <label>Currency</label>
+      <input id="cur" value="฿" />
+    </div>
+  </div>
+</div>
+
+<!-- BALANCE HERO -->
+<div class="card">
+  <div class="hero">
+    <div class="who" id="heroWho">Current balance</div>
+    <div class="amt zero" id="heroAmt">฿0</div>
+    <div class="note" id="heroNote">No entries yet</div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="k">Borrowed</div><div class="v pos" id="statBorrow">฿0</div></div>
+    <div class="stat"><div class="k">Repaid</div><div class="v neg" id="statRepay">฿0</div></div>
+    <div class="stat"><div class="k">Entries</div><div class="v" id="statCount">0</div></div>
+  </div>
+  <svg id="chart" viewBox="0 0 600 120" preserveAspectRatio="none" aria-label="Balance over time"></svg>
+  <div class="legend">Running balance over time</div>
+</div>
+
+<!-- INPUT -->
+<div class="card">
+  <div class="seg" role="tablist">
+    <button id="tabForm" aria-selected="true" onclick="showTab('form')">Add entry</button>
+    <button id="tabPaste" aria-selected="false" onclick="showTab('paste')">Paste LINE chat</button>
+  </div>
+
+  <div id="paneForm">
+    <div class="row">
+      <div style="flex:0 0 auto">
+        <label>Type</label>
+        <select id="fType">
+          <option value="1">+ Borrow</option>
+          <option value="-1">− Repay</option>
+        </select>
+      </div>
+      <div>
+        <label>Amount</label>
+        <input id="fAmt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="30" />
+      </div>
+    </div>
+    <div style="margin-top:10px">
+      <label>Note (optional)</label>
+      <input id="fNote" placeholder="lunch, taxi, …" />
+    </div>
+    <div style="margin-top:12px;display:flex;gap:10px">
+      <button class="primary" style="flex:1" onclick="addForm()">Add</button>
+    </div>
+  </div>
+
+  <div id="panePaste" hidden>
+    <label>Paste your LINE conversation</label>
+    <textarea id="pText" placeholder="Paste chat lines here, e.g.&#10;+30 lunch&#10;-10 paid back&#10;12:04 +50 taxi"></textarea>
+    <p class="h-meta" style="margin:8px 0">Each line with a <b>+</b> or <b>−</b> number becomes an entry. Text after the number is kept as the note. Lines without a signed number are skipped.</p>
+    <div style="display:flex;gap:10px">
+      <button class="ghost" style="flex:1" onclick="previewPaste()">Preview</button>
+      <button class="primary" style="flex:1" onclick="importPaste()">Import</button>
+    </div>
+    <div id="pPreview"></div>
+  </div>
+</div>
+
+<!-- HISTORY -->
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+    <b>History</b>
+    <button class="ghost" style="font-size:12px;padding:6px 10px" onclick="exportData()">Export</button>
+  </div>
+  <div id="history"><div class="empty">No entries yet</div></div>
+</div>
+
+<div class="foot">
+  <button class="danger" onclick="clearAll()">Clear all data</button>
+</div>
+
+<script>
+const KEY="loanTracker.v1";
+let state = load();
+
+function load(){
+  try{ const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.entries) return s; }catch(e){}
+  return {nameA:"Me", nameB:"Friend", cur:"฿", entries:[]};
+}
+function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+
+// wire name/currency inputs
+["nameA","nameB","cur"].forEach(id=>{
+  const el=document.getElementById(id);
+  el.value = state[id] || el.value;
+  el.addEventListener("input",()=>{ state[id]=el.value; save(); render(); });
+});
+
+function money(n){
+  const cur = state.cur || "";
+  const v = Math.abs(n);
+  const s = (Math.round(v*100)/100).toLocaleString(undefined,{maximumFractionDigits:2});
+  return (n<0?"−":"") + cur + s;
+}
+
+function showTab(which){
+  const f = which==="form";
+  document.getElementById("paneForm").hidden=!f;
+  document.getElementById("panePaste").hidden=f;
+  document.getElementById("tabForm").setAttribute("aria-selected",f);
+  document.getElementById("tabPaste").setAttribute("aria-selected",!f);
+}
+
+function addForm(){
+  const sign = parseInt(document.getElementById("fType").value,10);
+  const amt = parseFloat(document.getElementById("fAmt").value);
+  if(!amt || amt<=0){ document.getElementById("fAmt").focus(); return; }
+  const note = document.getElementById("fNote").value.trim();
+  state.entries.push({amt: sign*amt, note, t: Date.now()});
+  document.getElementById("fAmt").value="";
+  document.getElementById("fNote").value="";
+  save(); render();
+}
+
+// Parse a chat blob into entries. Grab the first signed number on each line.
+function parseChat(text){
+  const out=[];
+  text.split(/\r?\n/).forEach(line=>{
+    // match +30 / -30 / +30.5 (allow the unicode minus too)
+    const m = line.match(/([+\-−])\s*(\d+(?:\.\d+)?)/);
+    if(!m) return;
+    const sign = (m[1]==="+")?1:-1;
+    const amt = parseFloat(m[2]);
+    if(!amt) return;
+    // note = the line with the matched amount removed, trimmed of timestamps
+    let note = line.slice(0, m.index) + line.slice(m.index + m[0].length);
+    note = note.replace(/^\s*\d{1,2}[:.]\d{2}\s*/,"").replace(/\s+/g," ").trim();
+    out.push({amt: sign*amt, note, t: Date.now()});
+  });
+  return out;
+}
+
+function previewPaste(){
+  const rows = parseChat(document.getElementById("pText").value);
+  const box = document.getElementById("pPreview");
+  if(!rows.length){ box.innerHTML='<p class="h-meta">No signed numbers found.</p>'; return; }
+  box.innerHTML = '<p class="h-meta" style="margin-top:10px">Found '+rows.length+' entries — '+
+    rows.slice(0,6).map(r=>'<span style="color:'+(r.amt<0?'var(--neg)':'var(--pos)')+'">'+
+    (r.amt<0?'−':'+')+money(Math.abs(r.amt))+'</span>').join(", ")+(rows.length>6?" …":"")+'</p>';
+}
+function importPaste(){
+  const rows = parseChat(document.getElementById("pText").value);
+  if(!rows.length){ document.getElementById("pPreview").innerHTML='<p class="h-meta">Nothing to import.</p>'; return; }
+  state.entries.push(...rows);
+  document.getElementById("pText").value="";
+  document.getElementById("pPreview").innerHTML="";
+  save(); render();
+}
+
+function del(i){ state.entries.splice(i,1); save(); render(); }
+
+function clearAll(){
+  if(confirm("Delete all entries? This cannot be undone.")){
+    state.entries=[]; save(); render();
+  }
+}
+function exportData(){
+  const blob = new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download="loan-tracker.json"; a.click();
+}
+
+function drawChart(){
+  const svg=document.getElementById("chart");
+  const W=600,H=120,pad=8;
+  const es=state.entries;
+  if(!es.length){ svg.innerHTML=""; return; }
+  let run=0; const pts=[{x:0,y:0}];
+  es.forEach(e=>{ run+=e.amt; pts.push({x:pts.length, y:run}); });
+  const ys=pts.map(p=>p.y); let min=Math.min(0,...ys), max=Math.max(0,...ys);
+  if(min===max){min-=1;max+=1;}
+  const nx=pts.length-1||1;
+  const X=i=> pad + (i/nx)*(W-2*pad);
+  const Y=v=> H-pad - ((v-min)/(max-min))*(H-2*pad);
+  const line = pts.map((p,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(p.y).toFixed(1)).join(" ");
+  const area = line + " L"+X(nx).toFixed(1)+" "+Y(0).toFixed(1)+" L"+X(0).toFixed(1)+" "+Y(0).toFixed(1)+" Z";
+  const last=pts[pts.length-1].y;
+  const col = last>0?"var(--pos)":last<0?"var(--neg)":"var(--muted)";
+  const zeroY=Y(0).toFixed(1);
+  svg.innerHTML =
+    '<line x1="'+pad+'" y1="'+zeroY+'" x2="'+(W-pad)+'" y2="'+zeroY+'" stroke="var(--line)" stroke-width="1"/>'+
+    '<path d="'+area+'" fill="'+col+'" opacity="0.12"/>'+
+    '<path d="'+line+'" fill="none" stroke="'+col+'" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>'+
+    '<circle cx="'+X(nx).toFixed(1)+'" cy="'+Y(last).toFixed(1)+'" r="3.5" fill="'+col+'"/>';
+}
+
+function render(){
+  const A=state.nameA||"Me", B=state.nameB||"Friend";
+  document.getElementById("lblBorrowHint").textContent=B;
+
+  const bal = state.entries.reduce((s,e)=>s+e.amt,0);
+  const borrowed = state.entries.filter(e=>e.amt>0).reduce((s,e)=>s+e.amt,0);
+  const repaid = state.entries.filter(e=>e.amt<0).reduce((s,e)=>s-e.amt,0);
+
+  const amtEl=document.getElementById("heroAmt");
+  amtEl.textContent = money(Math.abs(bal));
+  amtEl.className = "amt "+(bal>0?"pos":bal<0?"neg":"zero");
+
+  const who=document.getElementById("heroWho"), note=document.getElementById("heroNote");
+  if(!state.entries.length){ who.textContent="Current balance"; note.textContent="No entries yet"; }
+  else if(bal>0){ who.textContent=B+" owes "+A; note.textContent="Outstanding balance"; }
+  else if(bal<0){ who.textContent=A+" owes "+B; note.textContent=B+" overpaid"; }
+  else { who.textContent="All settled 🎉"; note.textContent="Nobody owes anything"; }
+
+  document.getElementById("statBorrow").textContent=money(borrowed);
+  document.getElementById("statRepay").textContent="−"+money(repaid).replace("−","");
+  document.getElementById("statCount").textContent=state.entries.length;
+
+  const h=document.getElementById("history");
+  if(!state.entries.length){ h.innerHTML='<div class="empty">No entries yet</div>'; }
+  else{
+    h.innerHTML = state.entries.map((e,i)=>{
+      const idx = state.entries.length-i; // original order number
+      return '<div class="h-item">'+
+        '<div class="h-body"><div class="h-note">'+(escapeHtml(e.note)||(e.amt>0?"Borrowed":"Repaid"))+'</div>'+
+        '<div class="h-meta">#'+(i+1)+(e.amt>0?" · borrow":" · repay")+'</div></div>'+
+        '<div class="h-amt '+(e.amt<0?"neg":"pos")+'">'+(e.amt<0?"−":"+")+money(Math.abs(e.amt))+'</div>'+
+        '<button class="danger" onclick="del('+i+')">✕</button>'+
+      '</div>';
+    }).join("");
+  }
+  drawChart();
+}
+function escapeHtml(s){return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+
+render();
+</script>
+</body>
+</html>
